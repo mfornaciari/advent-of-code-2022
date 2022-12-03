@@ -3,26 +3,25 @@
 rucksacks = File.read('input.txt').split
 
 def solve_first_puzzle(rucksacks)
-  rucksacks.map do |rucksack|
+  rucksacks.sum do |rucksack|
     split_rucksack = split_rucksack(rucksack)
     found_item = (split_rucksack[0] & split_rucksack[1]).first
     calculate_value(found_item)
-  end.sum
+  end
 end
 
 def solve_second_puzzle(rucksacks)
-  sum = 0
-  rucksacks.each_slice(3) do |group|
-    split_group = group.map { |rucksack| rucksack.split('') }
+  groups = rucksacks.each_slice(3).to_a
+  groups.sum do |group|
+    split_group = group.map(&:chars)
     badge = (split_group[0] & split_group[1] & split_group[2]).first
-    sum += calculate_value(badge)
+    calculate_value(badge)
   end
-  sum
 end
 
 def split_rucksack(rucksack)
-  first_half = rucksack.slice(0, rucksack.length / 2).split('')
-  second_half = rucksack.slice(rucksack.length / 2, rucksack.length).split('')
+  first_half = rucksack[0...rucksack.size / 2].chars
+  second_half = rucksack[rucksack.size / 2..rucksack.size].chars
   [first_half, second_half]
 end
 
