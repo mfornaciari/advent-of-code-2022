@@ -1,29 +1,21 @@
 # frozen_string_literal: true
 
-class NoSpaceLeftOnDevice
+class Filesystem
+  attr_reader :tree, :root, :sum_100k_dirs, :deletable_dirs_sizes
+
   OUTPUT = File.read('input.txt').split("\n")[1..].freeze
 
   def initialize
     @tree = { '/' => { size: 0 } }
     @path = ['/']
-    @current_dir = @tree['/']
+    @root = @tree['/']
+    @current_dir = @root
     @sum_100k_dirs = 0
+    assemble_tree
+    calculate_size(@root)
+    @required_space = 30_000_000 - (70_000_000 - @root[:size])
     @deletable_dirs_sizes = []
-  end
-
-  def solve_first_puzzle
-    assemble_tree
-    calculate_size(@tree['/'])
-    @sum_100k_dirs
-  end
-
-  def solve_second_puzzle
-    assemble_tree
-    calculate_size(@tree['/'])
-    free_space = 70_000_000 - @tree['/'][:size]
-    required_space = 30_000_000 - free_space
-    find_deletable_dirs(@tree['/'], required_space)
-    @deletable_dirs_sizes.min
+    find_deletable_dirs(@root)
   end
 
   private
@@ -105,19 +97,28 @@ class NoSpaceLeftOnDevice
     dir[:size]
   end
 
-  def find_deletable_dirs(dir, required_space)
+  def find_deletable_dirs(dir)
     dir.each_value do |item|
       if item.is_a?(Hash)
-        @deletable_dirs_sizes << item[:size] if can_delete?(item, required_space)
-        find_deletable_dirs(item, required_space)
+        @deletable_dirs_sizes << item[:size] if can_delete?(item)
+        find_deletable_dirs(item)
       end
     end
   end
 
-  def can_delete?(dir, required_space)
-    dir[:size] >= required_space
+  def can_delete?(dir)
+    dir[:size] >= @required_space
   end
 end
 
-NoSpaceLeftOnDevice.new.solve_first_puzzle
-NoSpaceLeftOnDevice.new.solve_second_puzzle
+def solve_first_puzzle(tree)
+  tree.sum_100k_dirs
+end
+
+def solve_second_puzzle(tree)
+  tree.deletable_dirs_sizes.min
+end
+
+filesystem = Filesystem.new
+solve_first_puzzle(filesystem)
+solve_second_puzzle(filesystem)
