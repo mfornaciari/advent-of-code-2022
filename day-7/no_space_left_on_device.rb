@@ -111,12 +111,12 @@ class Filesystem
   end
 end
 
-def solve_first_puzzle(tree)
-  tree.sum_100k_dirs
+def solve_first_puzzle(filesystem)
+  filesystem.sum_100k_dirs
 end
 
-def solve_second_puzzle(tree)
-  tree.deletable_dirs_sizes.min
+def solve_second_puzzle(filesystem)
+  filesystem.deletable_dirs_sizes.min
 end
 
 filesystem = Filesystem.new
