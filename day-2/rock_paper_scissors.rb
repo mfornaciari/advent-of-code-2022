@@ -2,23 +2,7 @@
 
 VALUES = { 'rock' => 1, 'paper' => 2, 'scissors' => 3 }.freeze
 BEATEN_CHOICES = { 'rock' => 'scissors', 'paper' => 'rock', 'scissors' => 'paper' }.freeze
-
-guide = File.read('input.txt').split("\n").map(&:split)
-
-def solve_first_puzzle(guide)
-  guide.map do |round|
-    their_choice, my_choice = round
-    calculate_points(translate(my_choice), translate(their_choice))
-  end.sum
-end
-
-def solve_second_puzzle(guide)
-  guide.map do |round|
-    their_choice, result = round
-    my_choice = find_my_choice(translate(their_choice), result: result)
-    calculate_points(my_choice, translate(their_choice))
-  end.sum
-end
+GUIDE = File.read('input.txt').split("\n").map(&:split).freeze
 
 def calculate_points(my_choice, their_choice)
   points = VALUES[my_choice]
@@ -57,6 +41,20 @@ def find_my_choice(their_choice, result:)
   end
 end
 
-solve_first_puzzle(guide)
+def solve_first_puzzle
+  GUIDE.map do |round|
+    their_choice, my_choice = round
+    calculate_points(translate(my_choice), translate(their_choice))
+  end.sum
+end
 
-solve_second_puzzle(guide)
+def solve_second_puzzle
+  GUIDE.map do |round|
+    their_choice, result = round
+    my_choice = find_my_choice(translate(their_choice), result: result)
+    calculate_points(my_choice, translate(their_choice))
+  end.sum
+end
+
+solve_first_puzzle
+solve_second_puzzle
