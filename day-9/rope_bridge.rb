@@ -1,77 +1,103 @@
 # frozen_string_literal: true
 
-# Solves day 9 puzzles
-class DayNineSolver
-  def self.execute
-    new.solve_first_puzzle
+# A section of rope
+class Rope
+  attr_reader :head, :tail
+
+  def initialize
+    @head = [0, 0]
+    @tail = [0, 0]
+    @previous_tail = @tail
+    @tail_positions = [[0, 0]]
   end
 
-  def solve_first_puzzle
-    INSTRUCTIONS.each do |instruction|
-      direction, steps = instruction
+  def move(position)
+    self.previous_tail = tail
+    self.head = position
+    return unless detached?
 
-      steps.times do
-        move_head(direction)
-        move_tail if detached?
-        visited_positions << tail_position
-      end
-    end
-    visited_positions.uniq.count
+    self.tail = [new_row, new_column]
+    tail_positions << tail
+  end
+
+  def tail_moved?
+    tail != previous_tail
+  end
+
+  def unique_tail_positions
+    tail_positions.uniq.count
   end
 
   private
 
-  INSTRUCTIONS = File.read('input.txt').split("\n").map do |line|
-    direction, steps = line.split
-    [direction, steps.to_i]
-  end.freeze
-
-  MOVEMENTS = {
-    'R' => [0, 1],
-    'L' => [0, -1],
-    'U' => [1, 0],
-    'D' => [-1, 0]
-  }.freeze
-
-  attr_accessor :head_position, :tail_position, :visited_positions
-
-  def initialize
-    @head_position = [0, 0]
-    @tail_position = [0, 0]
-    @visited_positions = []
-  end
-
-  def move_head(direction)
-    self.head_position = head_position.zip(MOVEMENTS[direction]).map(&:sum)
-  end
+  attr_accessor :previous_tail
+  attr_reader :tail_positions
+  attr_writer :head, :tail
 
   def detached?
-    head_row, head_column = head_position
-    tail_row, tail_column = tail_position
-
-    distance(head_row, tail_row) > 1 ||
-      distance(head_column, tail_column) > 1
+    distance.any? { |coordinate| coordinate > 1 }
   end
 
-  def distance(point, other_point)
-    (point - other_point).abs
+  def distance
+    head.zip(tail).map { |coordinates| (coordinates.first - coordinates.last).abs }
   end
 
-  def move_tail
-    head_row, head_column = head_position
-    tail_row, tail_column = tail_position
-    row_distance = distance(head_row, tail_row)
-    column_distance = distance(head_column, tail_column)
-    self.tail_position = if row_distance > column_distance
-                           [tail_row + tail_movement(head_row, tail_row, row_distance), head_column]
-                         else
-                           [head_row, tail_column + tail_movement(head_column, tail_column, column_distance)]
-                         end
+  def new_row
+    row_distance, column_distance = distance
+    row_distance >= column_distance ? tail.first + coordinate_movement(head.first, tail.first) : head.first
   end
 
-  def tail_movement(head_point, tail_point, distance)
-    head_point > tail_point ? distance - 1 : 1 - distance
+  def new_column
+    row_distance, column_distance = distance
+    row_distance <= column_distance ? tail.last + coordinate_movement(head.last, tail.last) : head.last
+  end
+
+  def coordinate_movement(head_coordinate, tail_coordinate)
+    return (tail_coordinate + 1...head_coordinate).count if tail_coordinate <= head_coordinate
+
+    -(head_coordinate + 1...tail_coordinate).count
   end
 end
 
-DayNineSolver.execute
+MOVEMENTS = {
+  'R' => [0, 1],
+  'L' => [0, -1],
+  'U' => [1, 0],
+  'D' => [-1, 0]
+}.freeze
+
+INSTRUCTIONS = File.read('input.txt').split("\n").map do |line|
+  direction, steps = line.split
+  [direction, steps.to_i]
+end.freeze
+
+def solve(ropes)
+  INSTRUCTIONS.each { |instruction| follow(instruction, ropes: ropes) }
+  ropes.last.unique_tail_positions
+end
+
+def follow(instruction, ropes:)
+  direction, steps = instruction
+
+  steps.times do
+    target = ropes.first.head.zip(MOVEMENTS[direction]).map(&:sum)
+
+    ropes.each do |rope|
+      rope.move(target)
+      break unless rope.tail_moved?
+
+      target = rope.tail
+    end
+  end
+end
+
+def solve_first_puzzle
+  solve([Rope.new])
+end
+
+def solve_second_puzzle
+  solve(Array.new(9) { Rope.new })
+end
+
+solve_first_puzzle
+solve_second_puzzle
