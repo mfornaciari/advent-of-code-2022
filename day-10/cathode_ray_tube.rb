@@ -1,13 +1,14 @@
-# fronzen_string_literal: true
+# frozen_string_literal: true
 
-# The clock circuit's CPU
-class CPU
-  attr_reader :signal_strengths
+# The CRT device
+class Device
+  attr_reader :signal_strengths, :screen
 
   def initialize
     @current_cycle = 0
     @x = 1
     @signal_strengths = []
+    @screen = Array.new(6) { '.' * 40 }
   end
 
   def addx(value)
@@ -26,33 +27,47 @@ class CPU
   def tick(value)
     value.times do
       self.current_cycle += 1
+      draw
       signal_strengths << x * current_cycle
     end
   end
+
+  def draw
+    pixel_index = (current_cycle - 1) % 40
+    current_line = current_cycle / 40
+    sprite_center = x - 1..x + 1
+
+    screen[current_line][pixel_index] = '#' if sprite_center.cover?(pixel_index)
+  end
 end
 
-def follow(instruction, value, cpu)
+def follow(instruction, value)
   if instruction == 'addx'
-    cpu.addx(value)
+    DEVICE.addx(value)
   else
-    cpu.noop
+    DEVICE.noop
   end
 end
 
 def solve_first_puzzle
-  cpu = CPU.new
-
-  INSTRUCTIONS.each do |line|
-    instruction, value = line
-    follow(instruction, value, cpu)
-  end
-
-  cpu.signal_strengths[(19..220).step(40)].sum
+  DEVICE.signal_strengths[(19..220).step(40)].sum
 end
+
+def solve_second_puzzle
+  DEVICE.screen
+end
+
+DEVICE = Device.new
 
 INSTRUCTIONS = File.read('input.txt').split("\n").map do |line|
   instruction, value = line.split
   [instruction, value.to_i]
 end.freeze
 
+INSTRUCTIONS.each do |line|
+  instruction, value = line
+  follow(instruction, value)
+end
+
 solve_first_puzzle
+solve_second_puzzle
