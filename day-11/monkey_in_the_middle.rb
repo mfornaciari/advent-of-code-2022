@@ -16,12 +16,12 @@ class Monkey
     @times_inspected = 0
   end
 
-  def inspect_item(item)
+  def inspect_item(item, base, puzzle:)
     self.times_inspected += 1
     current_operand = operand.is_a?(Integer) ? operand : item
 
     raised_worry = operator == '*' ? item * current_operand : item + current_operand
-    raised_worry / 3
+    puzzle == 'first' ? raised_worry / 3 : raised_worry % base
   end
 
   def throw_item(item, target)
@@ -64,9 +64,9 @@ def monkey_factory(items_info, operation_info, divisible_by_info, true_target_in
              false_target: false_target)
 end
 
-def take_turn(monkey, monkeys)
+def take_turn(monkey, monkeys, base, puzzle:)
   monkey.items.each do |item|
-    item_worry_level = monkey.inspect_item(item)
+    item_worry_level = monkey.inspect_item(item, base, puzzle: puzzle)
     target = (item_worry_level % monkey.divisible_by).zero? ? monkey.true_target : monkey.false_target
     monkey.throw_item(item_worry_level, monkeys[target])
   end
@@ -74,16 +74,27 @@ def take_turn(monkey, monkeys)
   monkey.items = []
 end
 
-def solve_first_puzzle
+def solve(rounds, puzzle:)
   monkeys = INSTRUCTIONS.map do |monkey_info|
     items_info, operation_info, divisible_by_info, true_target_info, false_target_info = monkey_info
     monkey_factory(items_info, operation_info, divisible_by_info, true_target_info, false_target_info)
   end
-  20.times { monkeys.each { |monkey| take_turn(monkey, monkeys) } }
+
+  base = monkeys.map(&:divisible_by).reduce(&:*)
+  rounds.times { monkeys.each { |monkey| take_turn(monkey, monkeys, base, puzzle: puzzle) } }
 
   monkeys.map(&:times_inspected).max(2).reduce(&:*)
+end
+
+def solve_first_puzzle
+  solve(20, puzzle: 'first')
+end
+
+def solve_second_puzzle
+  solve(10_000, puzzle: 'second')
 end
 
 INSTRUCTIONS = File.read('input.txt').split("\n\n").map { |monkey| monkey.split("\n").map(&:strip)[1..] }.freeze
 
 solve_first_puzzle
+solve_second_puzzle
